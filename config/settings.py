@@ -5,28 +5,24 @@ from dotenv import load_dotenv
 # 🔥 LOAD ENV FILE
 load_dotenv()
 
-# Base directory
 BASE_DIR = Path(__file__).resolve().parent.parent
-
 
 # 🔐 SECURITY
 SECRET_KEY = os.getenv("SECRET_KEY", "django-insecure-fallback")
 DEBUG = os.getenv("DEBUG", "True") == "True"
 
-ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "").split(",") if not DEBUG else []
-
+if DEBUG:
+    ALLOWED_HOSTS = ["*"]
+else:
+    ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "").split(",")
 
 # 🧠 FEATURE FLAGS
 USE_AI = os.getenv("USE_AI", "False") == "True"
-
-# 🔥 MULTI AI SUPPORT
-AI_PROVIDER = os.getenv("AI_PROVIDER", "dummy")   # openai / gemini / dummy
-
+AI_PROVIDER = os.getenv("AI_PROVIDER", "dummy")
 
 # 🔑 API KEYS
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-
 
 # 🧠 APPLICATIONS
 INSTALLED_APPS = [
@@ -37,20 +33,21 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
-    # 🔥 Third party
     'rest_framework',
 
-    # 🔥 Your apps
     'apps.api',
     'apps.generator',
     'apps.posts',
     'apps.engine',
 ]
 
-
 # ⚙️ MIDDLEWARE
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+
+    # 🔥 ADD THIS (IMPORTANT FOR STATIC)
+    'whitenoise.middleware.WhiteNoiseMiddleware',
+
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -59,10 +56,11 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
+# 🔥 CUSTOM
+MIDDLEWARE.append('apps.api.middleware.APIKeyMiddleware')
 
-# 🌐 URL CONFIG
+# 🌐 URL
 ROOT_URLCONF = 'config.urls'
-
 
 # 🎨 TEMPLATES
 TEMPLATES = [
@@ -80,10 +78,8 @@ TEMPLATES = [
     },
 ]
 
-
 # 🚀 WSGI
 WSGI_APPLICATION = 'config.wsgi.application'
-
 
 # 💾 DATABASE
 DATABASES = {
@@ -93,7 +89,6 @@ DATABASES = {
     }
 }
 
-
 # 🔑 PASSWORD VALIDATION
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
@@ -102,19 +97,21 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
-
 # 🌍 LANGUAGE
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'Asia/Kolkata'
 USE_I18N = True
 USE_TZ = True
 
-
 # 📦 STATIC FILES
 STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / "staticfiles"
 
+# 🔥 IMPORTANT (STATIC FIX)
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
-# 🧠 DEFAULT PRIMARY KEY
+# 🔥 CLOUDFARE FIX (IMPORTANT)
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+# 🧠 DEFAULT PK
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
-MIDDLEWARE.append('apps.api.middleware.APIKeyMiddleware')

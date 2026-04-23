@@ -1,0 +1,5 @@
+django
+djangorestframework
+gunicorn
+python-dotenv
+whitenoise
