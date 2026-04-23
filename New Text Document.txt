@@ -1,0 +1,209 @@
+ai_cos/
+│
+├── manage.py
+│
+├── requirements/
+│   ├── base.txt
+│   ├── dev.txt
+│   └── prod.txt
+│
+├── config/
+│   ├── settings/
+│   │   ├── base.py
+│   │   ├── dev.py
+│   │   └── prod.py
+│   ├── urls.py
+│   ├── asgi.py
+│   └── celery.py
+│
+├── apps/
+│
+│   🌐 api/
+│   │   └── v1/
+│   │       ├── views.py
+│   │       ├── serializers.py
+│   │       └── urls.py
+│
+│   🧠 engine/
+│   │   ├── orchestrator.py
+│   │   ├── pipeline.py
+│   │   └── state_manager.py
+│
+│   🔍 discovery/
+│   │   ├── collectors/
+│   │   ├── processors/
+│   │   ├── detector/
+│   │   └── discovery.py
+│
+│   🧠 decision_engine/
+│   │   ├── rules/
+│   │   ├── scoring/
+│   │   ├── planner/
+│   │   └── decision.py
+│
+│   🤖 generator/
+│   │   ├── ai_client.py
+│   │   ├── prompts/
+│   │   ├── generator.py
+│   │   └── formatter.py
+│
+│   🔍 verifier/
+│   │   ├── extractor/
+│   │   ├── checker/
+│   │   ├── scorer/
+│   │   └── verifier.py
+│
+│   🔁 rewriter/
+│   │   ├── rewriter.py
+│   │   ├── loop_controller.py
+│   │   └── strategies.py
+│
+│   🧩 plugins/
+│   │   ├── base/
+│   │   │   ├── base_plugin.py
+│   │   │   └── registry.py
+│   │
+│   │   ├── seo/
+│   │   │   ├── title.py
+│   │   │   ├── meta.py
+│   │   │   ├── keywords.py
+│   │   │   ├── internal_links.py
+│   │   │   ├── external_links.py
+│   │   │   ├── anchor_optimizer.py
+│   │   │   ├── seo_scorer.py
+│   │   │   └── seo_plugin.py
+│   │
+│   │   ├── schema/
+│   │   │   └── schema_plugin.py
+│   │
+│   │   └── enhancer/
+│   │       └── content_enhancer.py
+│
+│   🚀 publisher/
+│   │   ├── wordpress/
+│   │   │   ├── client.py
+│   │   │   └── publisher.py
+│   │   ├── django/
+│   │   │   └── publisher.py
+│   │   └── manager.py
+│
+│   📊 analytics/
+│   │   ├── models.py
+│   │   ├── tracker.py
+│   │   └── insights.py
+│
+│   🔑 keywords/
+│   │   ├── trends/
+│   │   │   └── google_trends.py
+│   │   ├── scraper/
+│   │   │   ├── serp.py
+│   │   │   ├── suggestions.py
+│   │   │   └── paa.py
+│   │   ├── clustering/
+│   │   │   └── cluster.py
+│   │   ├── intent/
+│   │   │   └── classifier.py
+│   │   ├── scoring/
+│   │   │   └── opportunity.py
+│   │   └── keyword_engine.py
+│
+│   🕵️ competitor/
+│   │   ├── serp/
+│   │   │   └── extractor.py
+│   │   ├── analyzer/
+│   │   │   ├── content_analyzer.py
+│   │   │   ├── structure_analyzer.py
+│   │   │   ├── gap_finder.py
+│   │   │   └── weakness_detector.py
+│   │   ├── backlinks/
+│   │   │   └── backlink_extractor.py
+│   │   ├── scoring/
+│   │   │   └── competitor_score.py
+│   │   └── competitor_engine.py
+│
+│   🔗 link_engine/
+│   │   ├── internal/
+│   │   │   ├── similarity.py
+│   │   │   ├── linker.py
+│   │   │   └── updater.py
+│   │   ├── external/
+│   │   │   ├── finder.py
+│   │   │   ├── authority_filter.py
+│   │   │   └── inserter.py
+│   │   ├── anchor/
+│   │   │   └── generator.py
+│   │   └── link_engine.py
+│
+│   🔗 backlinks/
+│   │   ├── scraper/
+│   │   │   └── competitor_links.py
+│   │   ├── analyzer/
+│   │   │   ├── quality_checker.py
+│   │   │   └── spam_filter.py
+│   │   ├── outreach/
+│   │   │   ├── email_finder.py
+│   │   │   ├── mailer.py
+│   │   │   └── templates.py
+│   │   ├── guest_post/
+│   │   │   └── finder.py
+│   │   └── backlink_engine.py
+│
+│   🔄 update_engine/
+│   │   ├── detector/
+│   │   │   ├── freshness_checker.py
+│   │   │   └── change_detector.py
+│   │   ├── collector/
+│   │   │   ├── source_scraper.py
+│   │   │   └── api_fetcher.py
+│   │   ├── analyzer/
+│   │   │   ├── diff_analyzer.py
+│   │   │   └── priority.py
+│   │   ├── updater/
+│   │   │   ├── section_updater.py
+│   │   │   └── full_rewriter.py
+│   │   ├── linker/
+│   │   │   └── relinker.py
+│   │   └── update_engine.py
+│
+│   🧠 learning_engine/           🔥 SELF LEARNING
+│   │   ├── collector/
+│   │   │   └── performance_collector.py
+│   │   ├── analyzer/
+│   │   │   ├── pattern_detector.py
+│   │   │   └── success_analyzer.py
+│   │   ├── optimizer/
+│   │   │   ├── strategy_updater.py
+│   │   │   └── prompt_optimizer.py
+│   │   └── learning_engine.py
+│
+│   📊 feedback_engine/           🔥 ADMIN INSIGHTS
+│   │   ├── reporter/
+│   │   │   └── insight_generator.py
+│   │   ├── alerts/
+│   │   │   ├── issue_detector.py
+│   │   │   └── notifier.py
+│   │   └── feedback_engine.py
+│
+│   🚨 monitoring/               🔥 ERROR SYSTEM
+│   │   ├── logger/
+│   │   │   └── error_logger.py
+│   │   ├── checker/
+│   │   │   ├── api_health.py
+│   │   │   ├── worker_health.py
+│   │   │   └── publish_health.py
+│   │   └── monitor.py
+│
+├── workers/
+│   ├── celery.py
+│   ├── tasks/
+│   │   ├── discovery_task.py
+│   │   ├── pipeline_task.py
+│   │   ├── publish_task.py
+│   │   ├── update_task.py
+│   │   └── learning_task.py   🔥 NEW
+│
+├── utils/
+│   ├── logger.py
+│   ├── helpers.py
+│   ├── config.py
+│   └── exceptions.py
