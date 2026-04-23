@@ -1,0 +1,45 @@
+name: Auto Deploy Django
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to OCI via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script: |
+            set -e
+
+            echo "🚀 Starting deployment..."
+
+            cd ~/engine
+
+            echo "📥 Pulling latest code..."
+            git pull origin main
+
+            echo "🐳 Rebuilding containers..."
+            sudo docker compose down
+            sudo docker compose up -d --build
+
+            echo "⏳ Waiting for container..."
+            sleep 10
+
+            echo "📦 Running migrations..."
+            sudo docker exec engine_app python manage.py migrate --noinput
+
+            echo "📁 Collecting static..."
+            sudo docker exec engine_app python manage.py collectstatic --noinput
+
+            echo "🧹 Cleaning unused images..."
+            sudo docker image prune -f
+
+            echo "✅ Deployment completed!"
