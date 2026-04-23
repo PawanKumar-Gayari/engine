@@ -26,14 +26,17 @@ jobs:
             echo "📥 Pulling latest code..."
             git pull origin main
 
+            echo "🐳 Stopping old containers..."
+            sudo docker compose down
+
             echo "🐳 Rebuilding containers..."
-            sudo docker-compose up -d --build
+            sudo docker compose up -d --build
 
             echo "⏳ Waiting for container to be ready..."
             sleep 10
 
             echo "📦 Running migrations..."
-            sudo docker exec engine_app python manage.py migrate
+            sudo docker exec engine_app python manage.py migrate --noinput
 
             echo "📁 Collecting static files..."
             sudo docker exec engine_app python manage.py collectstatic --noinput
