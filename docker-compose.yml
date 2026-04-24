@@ -1,20 +1,32 @@
+version: "3.9"
+
 services:
-  web:
+  engine_app:
     build: .
     container_name: engine_app
+
     ports:
       - "8000:8000"
+
     restart: always
 
+    # 🔥 ENV FILE (VERY IMPORTANT)
     env_file:
       - .env
 
     environment:
       - PYTHONUNBUFFERED=1
 
+    # 🔥 volume for code + database persist
     volumes:
       - .:/app
       - db_data:/app/db
+
+    # 🔥 ensure server runs correctly
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py collectstatic --noinput &&
+             python manage.py runserver 0.0.0.0:8000"
 
 volumes:
   db_data:

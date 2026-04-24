@@ -3,3 +3,4 @@ djangorestframework
 gunicorn
 python-dotenv
 whitenoise
+google-generativeai
