@@ -2,19 +2,16 @@ from pathlib import Path
 import os
 from dotenv import load_dotenv
 
-# 🔥 LOAD ENV FILE
 load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # 🔐 SECURITY
 SECRET_KEY = os.getenv("SECRET_KEY", "django-insecure-fallback")
-DEBUG = os.getenv("DEBUG", "True") == "True"
+DEBUG = os.getenv("DEBUG", "False") == "True"
 
-if DEBUG:
-    ALLOWED_HOSTS = ["*"]
-else:
-    ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "").split(",")
+# ✅ HOSTS
+ALLOWED_HOSTS = ["*"]  # production me restrict karna
 
 # 🧠 FEATURE FLAGS
 USE_AI = os.getenv("USE_AI", "False") == "True"
@@ -41,23 +38,24 @@ INSTALLED_APPS = [
     'apps.engine',
 ]
 
-# ⚙️ MIDDLEWARE
+# ⚙️ MIDDLEWARE (🔥 ORDER FIXED)
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-
-    # 🔥 ADD THIS (IMPORTANT FOR STATIC)
     'whitenoise.middleware.WhiteNoiseMiddleware',
 
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
+
+    # 🔥 API KEY middleware पहले
+    'apps.api.middleware.APIKeyMiddleware',
+
+    # 🔥 CSRF बाद में
     'django.middleware.csrf.CsrfViewMiddleware',
+
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
-
-# 🔥 CUSTOM
-MIDDLEWARE.append('apps.api.middleware.APIKeyMiddleware')
 
 # 🌐 URL
 ROOT_URLCONF = 'config.urls'
@@ -66,7 +64,7 @@ ROOT_URLCONF = 'config.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / "templates"],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -89,14 +87,6 @@ DATABASES = {
     }
 }
 
-# 🔑 PASSWORD VALIDATION
-AUTH_PASSWORD_VALIDATORS = [
-    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
-]
-
 # 🌍 LANGUAGE
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'Asia/Kolkata'
@@ -106,12 +96,25 @@ USE_TZ = True
 # 📦 STATIC FILES
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / "staticfiles"
-
-# 🔥 IMPORTANT (STATIC FIX)
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
-# 🔥 CLOUDFARE FIX (IMPORTANT)
+# 🔥 PROXY FIX
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+# 🔥 CSRF TRUST
+CSRF_TRUSTED_ORIGINS = [
+    "http://127.0.0.1",
+    "http://localhost",
+    "https://pawan.aspirantveda.in",   # 🔥 add domain
+]
+
+# 🔥 DRF SETTINGS (CSRF avoid)
+REST_FRAMEWORK = {
+    "DEFAULT_PARSER_CLASSES": [
+        "rest_framework.parsers.JSONParser",
+    ],
+    "DEFAULT_AUTHENTICATION_CLASSES": [],  # 🔥 disable session auth
+}
 
 # 🧠 DEFAULT PK
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

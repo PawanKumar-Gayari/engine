@@ -7,4 +7,11 @@ services:
     ports:
       - "8000:8000"
     restart: always
-#p
+
+    # ✅ .env file load
+    env_file:
+      - .env
+
+    # ✅ optional (good for logs)
+    environment:
+      - PYTHONUNBUFFERED=1
