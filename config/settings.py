@@ -2,16 +2,20 @@ from pathlib import Path
 import os
 from dotenv import load_dotenv
 
+# 🔥 Load env
 load_dotenv()
 
+# Base directory
 BASE_DIR = Path(__file__).resolve().parent.parent
+
 
 # 🔐 SECURITY
 SECRET_KEY = os.getenv("SECRET_KEY", "django-insecure-fallback")
 DEBUG = os.getenv("DEBUG", "False") == "True"
 
-# ✅ HOSTS
-ALLOWED_HOSTS = ["*"]  # production me restrict karna
+# ✅ HOSTS (production me restrict karna)
+ALLOWED_HOSTS = ["*"]
+
 
 # 🧠 FEATURE FLAGS
 USE_AI = os.getenv("USE_AI", "False") == "True"
@@ -20,6 +24,7 @@ AI_PROVIDER = os.getenv("AI_PROVIDER", "dummy")
 # 🔑 API KEYS
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+
 
 # 🧠 APPLICATIONS
 INSTALLED_APPS = [
@@ -38,7 +43,8 @@ INSTALLED_APPS = [
     'apps.engine',
 ]
 
-# ⚙️ MIDDLEWARE (🔥 ORDER FIXED)
+
+# ⚙️ MIDDLEWARE
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
@@ -46,7 +52,7 @@ MIDDLEWARE = [
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
 
-    # 🔥 API KEY middleware पहले
+    # 🔥 API KEY पहले
     'apps.api.middleware.APIKeyMiddleware',
 
     # 🔥 CSRF बाद में
@@ -57,8 +63,10 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
+
 # 🌐 URL
 ROOT_URLCONF = 'config.urls'
+
 
 # 🎨 TEMPLATES
 TEMPLATES = [
@@ -76,16 +84,19 @@ TEMPLATES = [
     },
 ]
 
+
 # 🚀 WSGI
 WSGI_APPLICATION = 'config.wsgi.application'
 
-# 💾 DATABASE
+
+# 💾 DATABASE (🔥 FIXED – persistent)
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'NAME': BASE_DIR / 'db' / 'db.sqlite3',
     }
 }
+
 
 # 🌍 LANGUAGE
 LANGUAGE_CODE = 'en-us'
@@ -93,28 +104,33 @@ TIME_ZONE = 'Asia/Kolkata'
 USE_I18N = True
 USE_TZ = True
 
+
 # 📦 STATIC FILES
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
-# 🔥 PROXY FIX
+
+# 🔥 PROXY FIX (Cloudflare / reverse proxy)
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
 
 # 🔥 CSRF TRUST
 CSRF_TRUSTED_ORIGINS = [
     "http://127.0.0.1",
     "http://localhost",
-    "https://pawan.aspirantveda.in",   # 🔥 add domain
+    "https://pawan.aspirantveda.in",
 ]
 
-# 🔥 DRF SETTINGS (CSRF avoid)
+
+# 🔥 DRF SETTINGS
 REST_FRAMEWORK = {
     "DEFAULT_PARSER_CLASSES": [
         "rest_framework.parsers.JSONParser",
     ],
-    "DEFAULT_AUTHENTICATION_CLASSES": [],  # 🔥 disable session auth
+    "DEFAULT_AUTHENTICATION_CLASSES": [],
 }
+
 
 # 🧠 DEFAULT PK
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

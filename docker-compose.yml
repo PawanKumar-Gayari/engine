@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   web:
     build: .
@@ -8,10 +6,15 @@ services:
       - "8000:8000"
     restart: always
 
-    # ✅ .env file load
     env_file:
       - .env
 
-    # ✅ optional (good for logs)
     environment:
       - PYTHONUNBUFFERED=1
+
+    volumes:
+      - .:/app
+      - db_data:/app/db
+
+volumes:
+  db_data:
