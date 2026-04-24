@@ -6,80 +6,121 @@ load_dotenv()
 
 
 # =========================
-# 🧠 PROMPT BUILDER
+# 🧠 PROMPT BUILDER (PRO)
 # =========================
 def build_prompt(keyword: str, intent: str) -> str:
 
-    # 🐶 PET / ANIMAL
-    if intent == "pet":
+    # =========================
+    # 💼 JOB / CAREER (ADVANCED)
+    # =========================
+    if intent in ["career", "job"]:
+        return f"""
+You are an expert Hindi-English (Hinglish) SEO content writer.
+
+Write a HIGHLY STRUCTURED government job article on: {keyword}
+
+STRICT FORMAT (FOLLOW EXACTLY):
+
+1. SEO Introduction (keyword in first 100 words)
+
+2. ⚡ Latest Update Box (use HTML styled box with bullets)
+
+3. Overview Table (HTML table)
+
+4. Vacancy Details (table format)
+
+5. Important Dates (table)
+
+6. Eligibility Criteria
+   - Educational Qualification (table)
+   - Age Limit (table)
+
+7. Application Fee (table)
+
+8. Selection Process (step table)
+
+9. Exam Pattern (table + subjects)
+
+10. Physical Test (PET/PST tables if applicable)
+
+11. Salary Structure (table + allowances)
+
+12. Apply Online Steps (step-by-step)
+
+13. Required Documents (list)
+
+14. Preparation Strategy (practical tips)
+
+15. FAQs (Q1–Q10 using <details><summary> format)
+
+16. Conclusion
+
+RULES:
+- Use proper HTML: <h2>, <h3>, <table>, <ul>, <strong>
+- Use Hinglish (Hindi + English mix)
+- Make it REALISTIC (no fake data)
+- Use alert boxes (yellow/red/blue inline style)
+- Make article 1500+ words
+- SEO optimized
+
+OUTPUT: Clean HTML article only
+"""
+
+    # =========================
+    # 🐶 PET / GUIDE
+    # =========================
+    elif intent == "pet":
         return f"""
 Write a detailed, practical guide on: {keyword}
 
-Focus:
-- Pet care (dog/cat)
+Include:
 - Daily routine
-- Food and diet
-- Training tips
+- Food & diet
+- Training
 - Health care
 - Common mistakes
 
 Rules:
-- NO fake products
-- Real-world advice
-- Simple Hinglish language
-- Helpful for beginners
+- No fake info
+- Beginner friendly
+- Hinglish tone
 
 Structure:
 - Title
-- Introduction
-- H2 headings
+- Intro
+- H2 sections
 - Bullet points
 - FAQs
 - Conclusion
 """
 
-    # 💼 JOB / CAREER
-    elif intent == "career":
-        return f"""
-Write a detailed job article on: {keyword}
-
-Include:
-- Eligibility
-- Age limit
-- Salary
-- Selection process
-- Exam pattern
-- Important dates
-- Preparation tips
-
-Make it structured and factual.
-"""
-
+    # =========================
     # 📚 EDUCATION
+    # =========================
     elif intent == "education":
         return f"""
-Write an educational article on: {keyword}
+Write a structured educational article on: {keyword}
 
 Include:
 - Syllabus
 - Exam pattern
 - Important topics
-- Preparation strategy
-- Tips for scoring high
+- Preparation tips
 
-Keep it clear and structured.
+Make it clear and structured.
 """
 
-    # 📖 GENERAL / GUIDE
+    # =========================
+    # 📖 GENERAL (UPGRADED SEO)
+    # =========================
     else:
         return f"""
 Write a HIGH QUALITY SEO optimized article on: {keyword}
 
 Rules:
-- Understand the topic properly
-- Do NOT invent fake things
-- Keep content real and useful
-- Human-like tone
+- Human-like writing
+- No fake info
+- Practical content
 
 Structure:
 - Title
@@ -89,7 +130,7 @@ Structure:
 - FAQs
 - Conclusion
 
-Minimum 800 words.
+Minimum 1200 words.
 """
 
 
@@ -105,16 +146,16 @@ def generate_openrouter_content(keyword: str, intent: str = "general") -> str:
 
     url = "https://openrouter.ai/api/v1/chat/completions"
 
-    # 🔥 dynamic prompt
     prompt = build_prompt(keyword, intent)
 
     payload = {
+        # 🔥 Stable + Best free models
         "model": "meta-llama/llama-3-8b-instruct",
 
         "messages": [
             {
                 "role": "system",
-                "content": "You are a professional SEO blog writer who writes accurate and helpful content."
+                "content": "You are a professional SEO blog writer who writes structured, accurate and high-quality content."
             },
             {
                 "role": "user",
@@ -123,7 +164,7 @@ def generate_openrouter_content(keyword: str, intent: str = "general") -> str:
         ],
 
         "temperature": 0.7,
-        "max_tokens": 1200
+        "max_tokens": 2000
     }
 
     headers = {
@@ -131,7 +172,7 @@ def generate_openrouter_content(keyword: str, intent: str = "general") -> str:
         "Content-Type": "application/json"
     }
 
-    response = requests.post(url, headers=headers, json=payload, timeout=30)
+    response = requests.post(url, headers=headers, json=payload, timeout=60)
 
     # ❌ HTTP ERROR
     if response.status_code != 200:
