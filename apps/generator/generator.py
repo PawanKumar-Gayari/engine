@@ -1,39 +1,82 @@
 from .utils import is_ai_enabled
 from .ai_router import generate_ai_content
+from .intent import detect_intent
 
 
 def generate_article(keyword, style="blog"):
 
-    # 🔍 DEBUG (remove later if needed)
     print("\n========== GENERATOR DEBUG ==========")
-    print("AI ENABLED:", is_ai_enabled())
+
+    keyword = (keyword or "").strip()
     print("KEYWORD:", keyword)
 
-    # 🔥 CASE 1: AI ENABLED
-    if is_ai_enabled():
+    if not keyword:
+        return _dummy_article(keyword, error="Empty keyword")
+
+    ai_status = is_ai_enabled()
+    print("AI ENABLED:", ai_status)
+
+    # 🔍 Detect intent
+    intent = detect_intent(keyword)
+    print("🧠 DETECTED INTENT:", intent)
+
+    # =========================
+    # 🤖 AI MODE
+    # =========================
+    if ai_status:
         try:
             print("🚀 USING AI ROUTER...")
 
-            content = generate_ai_content(keyword)
+            # 🔥 PASS INTENT
+            content = generate_ai_content(keyword, intent=intent)
+
+            if not content:
+                raise Exception("Empty AI response")
 
             print("✅ AI SUCCESS")
 
             return {
-                "title": keyword,
+                "title": _generate_title(keyword, intent),
                 "content": content.strip(),
-                "source": "AI"
+                "source": "AI",
+                "intent": intent
             }
 
         except Exception as e:
             print("❌ AI ERROR:", str(e))
             return _dummy_article(keyword, error=str(e))
 
-    # 🔥 CASE 2: AI DISABLED
+    # =========================
+    # 🧪 DUMMY MODE
+    # =========================
     print("⚠️ USING DUMMY MODE")
     return _dummy_article(keyword)
 
 
-# 🔧 DUMMY GENERATOR
+# =========================
+# 🧠 TITLE GENERATOR
+# =========================
+def _generate_title(keyword, intent):
+
+    if intent == "career":
+        return f"{keyword} - Complete Job Guide 2026 | Eligibility, Salary, Selection Process"
+
+    elif intent == "education":
+        return f"{keyword} - Complete Guide 2026 | Syllabus, Exam Pattern, Preparation"
+
+    elif intent == "pet":
+        return f"{keyword} - Complete Pet Care Guide 2026 | Tips, Food, Training"
+
+    elif intent == "guide":
+        return f"{keyword} - Complete How-To Guide 2026"
+
+    else:
+        return f"{keyword} - Complete Guide 2026"
+
+
+# =========================
+# 🧪 DUMMY GENERATOR
+# =========================
 def _dummy_article(keyword, error=None):
 
     title = f"[DUMMY] {keyword} - Test Article"
@@ -66,6 +109,7 @@ Enable AI + valid API key to generate real content.
 
 🔧 SYSTEM INFO:
 Mode: DUMMY
+Error: {error}
 """
 
     return {
