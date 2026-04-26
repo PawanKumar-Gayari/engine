@@ -1,64 +1,323 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Generate Blog</title>
-  <style>
-    body { font-family: Arial; padding: 20px; }
-    input { padding: 8px; width: 250px; }
-    button { padding: 8px 12px; margin-left: 10px; }
-    pre { background: #f5f5f5; padding: 15px; margin-top: 20px; white-space: pre-wrap; }
-  </style>
+<meta charset="UTF-8">
+<title>AI Blog Generator PRO MAX v2</title>
+
+<style>
+body {
+  font-family: "Segoe UI", sans-serif;
+  background: linear-gradient(135deg,#eef2f7,#dde6f3);
+  padding: 20px;
+}
+
+.container { max-width: 1200px; margin:auto; }
+
+.card {
+  background:white;
+  padding:20px;
+  border-radius:14px;
+  margin-bottom:20px;
+  box-shadow:0 8px 25px rgba(0,0,0,0.08);
+}
+
+input {
+  width:70%;
+  padding:12px;
+  border-radius:8px;
+  border:1px solid #ccc;
+}
+
+button {
+  padding:10px 14px;
+  border:none;
+  border-radius:8px;
+  margin:5px;
+  cursor:pointer;
+  font-weight:bold;
+}
+
+.generate { background:#007bff;color:white; }
+.copy { background:#28a745;color:white; }
+.download { background:#ff9800;color:white; }
+.publish { background:#9c27b0;color:white; }
+.fix { background:#f44336;color:white; }
+
+.box {
+  background:#f9f9f9;
+  padding:12px;
+  border-radius:8px;
+  margin-top:5px;
+  max-height:250px;
+  overflow:auto;
+}
+
+.preview {
+  background:white;
+  padding:20px;
+  border-radius:10px;
+  border:1px solid #ddd;
+}
+
+.status { font-weight:bold; margin-top:10px; }
+
+</style>
 </head>
+
 <body>
 
-<h2>🚀 Generate Blog</h2>
+<div class="container">
 
-<input type="text" id="keyword" placeholder="Enter keyword">
-<button onclick="generate()">Generate</button>
+<h1>🚀 AI Blog Generator PRO MAX v2</h1>
 
-<pre id="result">Result will appear here...</pre>
+<div class="card">
+<input id="keyword" placeholder="Enter keyword">
+<button class="generate" onclick="generate()">Generate</button>
+<div id="status" class="status"></div>
+</div>
+
+<div class="card">
+<h3>📄 Output</h3>
+
+<b>Title</b>
+<div id="title" class="box"></div>
+
+<b>Meta</b>
+<div id="meta" class="box"></div>
+
+<b>Content</b>
+<div id="content" class="box"></div>
+
+<button class="copy" onclick="copyText()">Copy</button>
+<button class="download" onclick="downloadHTML()">Download HTML</button>
+<button class="publish" onclick="autoPublish()">Publish</button>
+
+</div>
+
+<div class="card">
+<h3>📊 SEO Analysis</h3>
+
+<p>Score: <span id="seoScore">0</span></p>
+<div style="background:#ddd;height:10px;border-radius:5px;">
+<div id="seoBar" style="height:10px;width:0%;background:green;"></div>
+</div>
+
+<p>Word Count: <span id="wordCount">0</span></p>
+<p>Keyword Density: <span id="density">0%</span></p>
+
+<button class="fix" onclick="autoFixSEO()">Auto SEO Fix</button>
+
+</div>
+
+<div class="card">
+<h3>🔍 Keyword Suggestions</h3>
+<div id="suggestions" class="box"></div>
+
+<h3>📈 Rank Prediction</h3>
+<div id="rank" class="box"></div>
+</div>
+
+<div class="card">
+<h3>👁️ Preview</h3>
+<div id="preview" class="preview"></div>
+</div>
+
+</div>
 
 <script>
-async function generate() {
-    const keyword = document.getElementById("keyword").value;
 
-    if (!keyword) {
-        alert("Please enter keyword");
-        return;
-    }
+const API = "/api/v1/generate/";   // ✅ FIXED
+const API_KEY = "mysecret123";
 
-    document.getElementById("result").innerText = "Generating...";
 
-    try {
-        const res = await fetch("/api/generate/", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "X-API-KEY": "mysecret123"
-            },
-            body: JSON.stringify({ keyword })
-        });
+// =========================
+// 🚀 GENERATE
+// =========================
+async function generate(){
 
-        // 🔥 पहले raw text लो (important)
-        const text = await res.text();
+const keyword = document.getElementById("keyword").value.trim();
+if(!keyword) return alert("Enter keyword");
 
-        try {
-            // 🔥 JSON parse try करो
-            const data = JSON.parse(text);
-            document.getElementById("result").innerText =
-                JSON.stringify(data, null, 2);
-        } catch (e) {
-            // ❌ अगर HTML आया तो पूरा दिखाओ
-            document.getElementById("result").innerText =
-                "Non-JSON Response (Error Page):\n\n" + text;
-        }
+setStatus("⏳ Generating...");
 
-    } catch (err) {
-        document.getElementById("result").innerText =
-            "Fetch Error: " + err;
-        console.error(err);
-    }
+try{
+
+const res = await fetch(API,{
+method:"POST",
+headers:{
+"Content-Type":"application/json",
+"X-API-KEY":API_KEY
+},
+body: JSON.stringify({keyword})
+});
+
+const data = await res.json();
+
+document.getElementById("title").innerText = data.title;
+document.getElementById("meta").innerText = data.meta_description;
+document.getElementById("content").innerText = stripHTML(data.content);
+document.getElementById("preview").innerHTML = data.content;
+
+analyzeSEO(data.content, keyword);
+suggestKeywords(keyword);
+predictRank();
+
+setStatus("✅ Done");
+
+}catch(e){
+console.error(e);
+setStatus("❌ Error");
 }
+
+}
+
+
+// =========================
+// 📊 SEO ENGINE (UPGRADED)
+// =========================
+function analyzeSEO(content, keyword){
+
+const text = content.toLowerCase();
+const words = text.split(/\s+/).filter(Boolean);
+
+const wc = words.length;
+const kc = (text.match(new RegExp(keyword.toLowerCase(),"g"))||[]).length;
+const density = wc ? ((kc/wc)*100).toFixed(2) : 0;
+
+let score = 0;
+
+if(wc > 1200) score+=40;
+if(kc > 8) score+=30;
+if(density >=1 && density<=2.5) score+=30;
+
+document.getElementById("wordCount").innerText = wc;
+document.getElementById("density").innerText = density+"%";
+document.getElementById("seoScore").innerText = score;
+
+const bar = document.getElementById("seoBar");
+bar.style.width = score+"%";
+bar.style.background = score<50?"red":score<80?"orange":"green";
+
+}
+
+
+// =========================
+// ⚡ AUTO SEO FIX (SMART)
+// =========================
+function autoFixSEO(){
+
+let content = document.getElementById("content").innerText;
+const keyword = document.getElementById("keyword").value;
+
+if(!content) return alert("Generate first");
+
+// 🔥 smart injection
+content += `\n\n${keyword} 2026 is very important topic with full details and guide.`;
+
+// 🔥 add headings
+if(!content.includes("Conclusion")){
+content += "\n\nConclusion:\nThis article gives complete understanding.";
+}
+
+document.getElementById("content").innerText = content;
+document.getElementById("preview").innerText = content;
+
+analyzeSEO(content, keyword);
+
+alert("SEO improved 🚀");
+}
+
+
+// =========================
+// 🔍 SUGGESTIONS
+// =========================
+function suggestKeywords(k){
+
+const list=[
+k+" 2026",
+"latest "+k,
+k+" syllabus pdf",
+k+" exam pattern",
+k+" preparation tips"
+];
+
+document.getElementById("suggestions").innerText=list.join("\n");
+
+}
+
+
+// =========================
+// 📈 RANK PREDICTOR
+// =========================
+function predictRank(){
+
+const score=parseInt(document.getElementById("seoScore").innerText);
+
+let r="Low";
+
+if(score>=80) r="🔥 Top 10 chance";
+else if(score>=60) r="⚡ Medium rank";
+
+document.getElementById("rank").innerText=r;
+
+}
+
+
+// =========================
+// 📋 COPY
+// =========================
+function copyText(){
+navigator.clipboard.writeText(document.getElementById("content").innerText);
+alert("Copied");
+}
+
+
+// =========================
+// ⬇️ DOWNLOAD
+// =========================
+function downloadHTML(){
+const html=document.getElementById("preview").innerHTML;
+const blob=new Blob([html]);
+const a=document.createElement("a");
+a.href=URL.createObjectURL(blob);
+a.download="blog.html";
+a.click();
+}
+
+
+// =========================
+// 🚀 PUBLISH
+// =========================
+async function autoPublish(){
+
+const title=document.getElementById("title").innerText;
+const content=document.getElementById("preview").innerHTML;
+
+await fetch("/api/v1/publish/",{
+method:"POST",
+headers:{
+"Content-Type":"application/json",
+"X-API-KEY":API_KEY
+},
+body: JSON.stringify({title,content})
+});
+
+alert("Published 🚀");
+
+}
+
+
+// =========================
+// 🧹 UTIL
+// =========================
+function stripHTML(html){
+return html.replace(/<[^>]+>/g,"");
+}
+
+function setStatus(msg){
+document.getElementById("status").innerText=msg;
+}
+
 </script>
 
 </body>

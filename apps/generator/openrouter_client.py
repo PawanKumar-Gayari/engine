@@ -1,195 +1,203 @@
 import requests
 import os
+import time
+import random
+import logging
 from dotenv import load_dotenv
 
 load_dotenv()
 
+logger = logging.getLogger(__name__)
+
 
 # =========================
-# 🧠 PROMPT BUILDER (PRO)
+# ⚙️ CONFIG
 # =========================
-def build_prompt(keyword: str, intent: str) -> str:
+OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
-    # =========================
-    # 💼 JOB / CAREER (ADVANCED)
-    # =========================
-    if intent in ["career", "job"]:
+MODELS = [
+    "meta-llama/llama-3-8b-instruct",
+    "mistralai/mistral-7b-instruct",
+    "openchat/openchat-3.5"
+]
+
+MAX_RETRIES = 3
+
+
+# =========================
+# 🧠 PROMPT BUILDER (UPGRADED)
+# =========================
+def build_prompt(keyword, intent, stage="draft", base_content=""):
+
+    base_rules = """
+- Write in Hinglish (Hindi + English mix)
+- Human tone (no robotic)
+- SEO optimized
+- Use HTML tags (<h2>, <h3>, <ul>, <table>)
+- No repetition
+"""
+
+    # 🔥 STAGE BASED PROMPTS
+    if stage == "rewrite":
         return f"""
-You are an expert Hindi-English (Hinglish) SEO content writer.
+Improve and rewrite the following content:
 
-Write a HIGHLY STRUCTURED government job article on: {keyword}
+{base_content}
 
-STRICT FORMAT (FOLLOW EXACTLY):
-
-1. SEO Introduction (keyword in first 100 words)
-
-2. ⚡ Latest Update Box (use HTML styled box with bullets)
-
-3. Overview Table (HTML table)
-
-4. Vacancy Details (table format)
-
-5. Important Dates (table)
-
-6. Eligibility Criteria
-   - Educational Qualification (table)
-   - Age Limit (table)
-
-7. Application Fee (table)
-
-8. Selection Process (step table)
-
-9. Exam Pattern (table + subjects)
-
-10. Physical Test (PET/PST tables if applicable)
-
-11. Salary Structure (table + allowances)
-
-12. Apply Online Steps (step-by-step)
-
-13. Required Documents (list)
-
-14. Preparation Strategy (practical tips)
-
-15. FAQs (Q1–Q10 using <details><summary> format)
-
-16. Conclusion
-
-RULES:
-- Use proper HTML: <h2>, <h3>, <table>, <ul>, <strong>
-- Use Hinglish (Hindi + English mix)
-- Make it REALISTIC (no fake data)
-- Use alert boxes (yellow/red/blue inline style)
-- Make article 1500+ words
+Make it:
+- More human
+- More detailed
+- Better structured
 - SEO optimized
 
-OUTPUT: Clean HTML article only
+Return HTML only.
+"""
+
+    elif stage == "seo":
+        return f"""
+Optimize this content for SEO:
+
+{base_content}
+
+Add:
+- better headings
+- keywords
+- readability improvement
+
+Return HTML only.
 """
 
     # =========================
-    # 🐶 PET / GUIDE
+    # DEFAULT (DRAFT)
     # =========================
-    elif intent == "pet":
+    if intent in ["career", "job"]:
         return f"""
-Write a detailed, practical guide on: {keyword}
+Write a HIGH QUALITY job article on: {keyword}
 
 Include:
-- Daily routine
-- Food & diet
-- Training
-- Health care
-- Common mistakes
+- Overview Table
+- Eligibility
+- Dates
+- Salary
+- Apply Steps
+- FAQs
 
-Rules:
-- No fake info
-- Beginner friendly
-- Hinglish tone
+{base_rules}
+"""
 
-Structure:
-- Title
-- Intro
+    elif intent == "education":
+        return f"""
+Write an educational article on: {keyword}
+
+Include:
+- Syllabus
+- Exam Pattern
+- Tips
+- FAQs
+
+{base_rules}
+"""
+
+    return f"""
+Write a HIGH QUALITY SEO article on: {keyword}
+
+Include:
+- Introduction
 - H2 sections
 - Bullet points
 - FAQs
 - Conclusion
-"""
 
-    # =========================
-    # 📚 EDUCATION
-    # =========================
-    elif intent == "education":
-        return f"""
-Write a structured educational article on: {keyword}
-
-Include:
-- Syllabus
-- Exam pattern
-- Important topics
-- Preparation tips
-
-Make it clear and structured.
-"""
-
-    # =========================
-    # 📖 GENERAL (UPGRADED SEO)
-    # =========================
-    else:
-        return f"""
-Write a HIGH QUALITY SEO optimized article on: {keyword}
-
-Rules:
-- Human-like writing
-- No fake info
-- Practical content
-
-Structure:
-- Title
-- Introduction
-- H2 headings
-- Bullet points
-- FAQs
-- Conclusion
-
-Minimum 1200 words.
+{base_rules}
 """
 
 
 # =========================
-# 🚀 MAIN FUNCTION
+# 🚀 MAIN FUNCTION (FIXED)
 # =========================
-def generate_openrouter_content(keyword: str, intent: str = "general") -> str:
+def generate_openrouter_content(
+    keyword,
+    intent="general",
+    stage="draft",
+    base_content="",
+    model=None
+):
 
     api_key = os.getenv("OPENROUTER_API_KEY")
 
     if not api_key:
-        raise Exception("OPENROUTER_API_KEY not found")
+        raise Exception("OPENROUTER_API_KEY missing")
 
-    url = "https://openrouter.ai/api/v1/chat/completions"
+    prompt = build_prompt(keyword, intent, stage, base_content)
 
-    prompt = build_prompt(keyword, intent)
+    last_error = None
 
-    payload = {
-        # 🔥 Stable + Best free models
-        "model": "meta-llama/llama-3-8b-instruct",
+    models_to_try = [model] if model else MODELS
 
-        "messages": [
-            {
-                "role": "system",
-                "content": "You are a professional SEO blog writer who writes structured, accurate and high-quality content."
-            },
-            {
-                "role": "user",
-                "content": prompt
-            }
-        ],
+    for mdl in models_to_try:
 
-        "temperature": 0.7,
-        "max_tokens": 2000
-    }
+        for attempt in range(1, MAX_RETRIES + 1):
 
-    headers = {
-        "Authorization": f"Bearer {api_key}",
-        "Content-Type": "application/json"
-    }
+            try:
+                logger.info(f"[OPENROUTER] {stage} | {mdl} | Attempt {attempt}")
 
-    response = requests.post(url, headers=headers, json=payload, timeout=60)
+                response = requests.post(
+                    OPENROUTER_URL,
+                    headers={
+                        "Authorization": f"Bearer {api_key}",
+                        "Content-Type": "application/json"
+                    },
+                    json={
+                        "model": mdl,
+                        "messages": [
+                            {"role": "system", "content": "You are an expert SEO writer."},
+                            {"role": "user", "content": prompt}
+                        ],
+                        "temperature": 0.7,
+                        "max_tokens": 2500
+                    },
+                    timeout=40
+                )
 
-    # ❌ HTTP ERROR
-    if response.status_code != 200:
-        raise Exception(f"OpenRouter HTTP Error: {response.status_code} - {response.text}")
+                if response.status_code != 200:
+                    raise Exception(response.text)
 
-    data = response.json()
+                data = response.json()
 
-    # ❌ API ERROR
-    if "error" in data:
-        raise Exception(f"OpenRouter Error: {data['error']['message']}")
+                content = data["choices"][0]["message"]["content"]
 
-    try:
-        content = data["choices"][0]["message"]["content"]
-    except Exception:
-        raise Exception("Invalid response format from OpenRouter")
+                content = _clean_content(content)
+
+                if not content or len(content) < 300:
+                    raise Exception("Weak response")
+
+                logger.info(f"[SUCCESS] {mdl}")
+
+                return content
+
+            except Exception as e:
+                last_error = e
+
+                logger.warning(
+                    f"[FAIL] {mdl} | Attempt {attempt} | {e}"
+                )
+
+                time.sleep((2 ** attempt) + random.uniform(0, 1))
+
+    logger.error("[OPENROUTER] ALL FAILED")
+
+    raise Exception(f"OpenRouter failed: {last_error}")
+
+
+# =========================
+# 🧹 CLEANER
+# =========================
+def _clean_content(content):
 
     if not content:
-        raise Exception("Empty response from OpenRouter")
+        return ""
 
-    return content.strip()
+    content = content.replace("```html", "").replace("```", "")
+    content = content.strip()
+
+    return content
