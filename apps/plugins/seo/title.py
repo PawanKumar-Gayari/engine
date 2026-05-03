@@ -6,17 +6,13 @@ from apps.plugins.base.base_plugin import BasePlugin
 
 class TitlePlugin(BasePlugin):
     """
-    🚀 ULTIMATE SEO TITLE ENGINE (AI + CTR + Ranking)
+    🚀 AI TITLE ENGINE v5 (A/B + CTR + Competitor Inspired)
 
     Features:
-    - keyword front-loading (SEO boost)
-    - dynamic year injection
-    - power + number CTR system
-    - duplicate + stopword cleanup
-    - smart capitalization
-    - title scoring system
-    - A/B variant support (future ready)
-    - over-optimization control
+    - A/B title generation
+    - CTR prediction scoring
+    - competitor pattern simulation
+    - intent-aware title styles
     """
 
     name = "seo_title"
@@ -25,17 +21,9 @@ class TitlePlugin(BasePlugin):
 
     MAX_LENGTH = 65
 
-    POWER_WORDS = [
-        "Best", "Latest", "Ultimate", "Complete", "Updated"
-    ]
-
-    NUMBER_WORDS = [
-        "Top 5", "Top 10", "5 Best", "7 Proven"
-    ]
-
-    STOPWORDS = {
-        "the", "a", "an", "and", "of", "for", "in"
-    }
+    POWER_WORDS = ["Best", "Latest", "Ultimate", "Complete", "Updated"]
+    NUMBER_WORDS = ["Top 5", "Top 10", "7 Proven", "5 Best"]
+    STOPWORDS = {"the", "a", "an", "and", "of", "for", "in"}
 
     CURRENT_YEAR = str(datetime.now().year)
 
@@ -44,148 +32,109 @@ class TitlePlugin(BasePlugin):
     # =========================
     def run(self, article, keyword="", intent="", context=None):
 
-        keyword = keyword.strip()
+        context = context or {}
 
-        if not keyword:
-            return article  # 🔒 safety
+        if isinstance(article, str):
+            article = {"content": article}
 
-        # 🔹 clean keyword
+        keyword = keyword or context.get("keyword") or article.get("title", "")
         keyword = self._clean_keyword(keyword)
 
-        # 🔹 build base title
-        title = self._build_title(keyword, intent)
+        if not keyword:
+            return article
 
-        # 🔹 inject CTR boosters
-        title = self._inject_power(title)
+        # =========================
+        # 🔥 A/B TITLE GENERATION
+        # =========================
+        titles = self._generate_variants(keyword, intent)
 
-        # 🔹 clean duplicates
-        title = self._remove_duplicates(title)
+        # =========================
+        # 📊 CTR PREDICTION
+        # =========================
+        scored_titles = [(t, self._predict_ctr(t, keyword)) for t in titles]
 
-        # 🔹 capitalization
-        title = self._capitalize_title(title)
+        # best title select
+        best_title, best_score = max(scored_titles, key=lambda x: x[1])
 
-        # 🔹 trim length
-        title = self._trim_title(title)
+        article["title"] = best_title
+        article["title_score"] = best_score
 
-        # 🔹 score title
-        score = self._score_title(title, keyword)
-
-        # 🔹 store score (future analytics)
-        article["title_score"] = score
-        article["title"] = title
+        # 🔥 store variants (future A/B testing)
+        article["title_variants"] = [
+            {"title": t, "score": s} for t, s in scored_titles
+        ]
 
         return article
 
     # =========================
-    # 🧹 KEYWORD CLEAN
+    # 🔥 VARIANT GENERATOR
     # =========================
-    def _clean_keyword(self, keyword):
-
-        keyword = re.sub(r"[^a-zA-Z0-9\s]", "", keyword)
-        return keyword.strip().title()
-
-    # =========================
-    # 🧠 TITLE BUILDER (SEO FIRST)
-    # =========================
-    def _build_title(self, keyword, intent):
+    def _generate_variants(self, keyword, intent):
 
         year = self.CURRENT_YEAR
+        variants = []
 
-        # 🔥 keyword always at front (SEO boost)
+        # style 1: standard SEO
+        variants.append(f"{keyword} {year} | Complete Guide & Details")
+
+        # style 2: listicle (high CTR)
+        variants.append(f"Top 10 {keyword} {year} | Best Tips & Insights")
+
+        # style 3: question (CTR boost)
+        variants.append(f"What is {keyword}? {year} Guide Explained")
+
+        # style 4: power word
+        variants.append(f"{random.choice(self.POWER_WORDS)} {keyword} {year} Guide")
+
+        # style 5: intent specific
         if intent == "career":
-            return f"{keyword} {year} Notification | Eligibility, Salary, Apply Online"
-
-        elif intent == "education":
-            return f"{keyword} {year} | Syllabus, Exam Pattern, Preparation Tips"
+            variants.append(f"{keyword} {year} Notification | Apply, Salary, Eligibility")
 
         elif intent == "guide":
-            return f"{keyword} Guide {year} | Step-by-Step Process"
+            variants.append(f"{keyword} Step-by-Step Guide {year}")
 
-        return f"{keyword} {year} | Complete Guide, Details"
+        elif intent == "commercial":
+            variants.append(f"Best {keyword} {year} | Top Picks & Reviews")
 
-    # =========================
-    # 🔥 POWER + NUMBER INJECTION
-    # =========================
-    def _inject_power(self, title):
-
-        power = random.choice(self.POWER_WORDS)
-        number = random.choice(self.NUMBER_WORDS)
-
-        # avoid over-optimization
-        if power.lower() not in title.lower():
-            title = f"{power} {title}"
-
-        if random.random() > 0.6:
-            title = f"{number} {title}"
-
-        return title
+        return list(set(variants))  # remove duplicates
 
     # =========================
-    # 🔁 DUPLICATE REMOVE
+    # 📊 CTR PREDICTOR
     # =========================
-    def _remove_duplicates(self, title):
-
-        words = title.split()
-        seen = set()
-        result = []
-
-        for w in words:
-            lw = w.lower()
-
-            if lw not in seen or lw not in self.STOPWORDS:
-                result.append(w)
-                seen.add(lw)
-
-        return " ".join(result)
-
-    # =========================
-    # 🔤 SMART CAPITALIZATION
-    # =========================
-    def _capitalize_title(self, title):
-
-        words = title.split()
-
-        return " ".join(
-            w.capitalize() if w.lower() not in self.STOPWORDS else w
-            for w in words
-        )
-
-    # =========================
-    # ✂️ LENGTH CONTROL
-    # =========================
-    def _trim_title(self, title):
-
-        if len(title) <= self.MAX_LENGTH:
-            return title
-
-        return title[:self.MAX_LENGTH].rsplit(" ", 1)[0]
-
-    # =========================
-    # 📊 TITLE SCORING ENGINE
-    # =========================
-    def _score_title(self, title, keyword):
+    def _predict_ctr(self, title, keyword):
 
         score = 0
         text = title.lower()
 
-        # 🔹 keyword presence
-        if keyword.lower() in text:
-            score += 30
+        # keyword front load
+        if text.startswith(keyword.lower()):
+            score += 25
 
-        # 🔹 optimal length
-        if 40 <= len(title) <= 65:
+        # keyword presence
+        if keyword.lower() in text:
             score += 20
 
-        # 🔹 power words
+        # power words
         if any(p.lower() in text for p in self.POWER_WORDS):
             score += 15
 
-        # 🔹 numbers
+        # numbers boost CTR
         if any(n.lower() in text for n in self.NUMBER_WORDS):
             score += 15
 
-        # 🔹 readability (simple heuristic)
-        if "|" in title:
+        # question titles
+        if "what" in text or "how" in text:
             score += 10
 
+        # optimal length
+        if 40 <= len(title) <= 65:
+            score += 15
+
         return min(score, 100)
+
+    # =========================
+    # 🧹 CLEAN KEYWORD
+    # =========================
+    def _clean_keyword(self, keyword):
+        keyword = re.sub(r"[^a-zA-Z0-9\s]", "", keyword)
+        return keyword.strip().title()

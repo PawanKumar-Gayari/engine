@@ -92,7 +92,7 @@ def build_response(post, logs):
 
 
 # =========================
-# 🚀 RATE LIMIT (ADVANCED)
+# 🚀 RATE LIMIT
 # =========================
 def is_rate_limited(user, ip):
     key = f"rate:{user.id}:{ip}"
@@ -106,24 +106,30 @@ def is_rate_limited(user, ip):
 
 
 # =========================
-# 🤖 GENERATION CORE
+# 🤖 GENERATION CORE (FIXED)
 # =========================
 def generate_content(keyword):
 
     result = run_pipeline(keyword)
 
-    if not result or not hasattr(result, "article"):
-        raise Exception("Pipeline failed")
+    # ✅ new structure
+    if not result or result.get("status") != "success":
+        raise Exception(result.get("error", "Pipeline failed"))
 
-    article = result.article or {}
+    article = {
+        "title": result.get("title"),
+        "content": result.get("content"),
+        "meta_description": result.get("meta"),
+    }
 
     content = article.get("content", "")
 
-    # 🔁 retry if weak
+    # 🔁 retry fallback
     if len(content) < 200:
-        result = run_pipeline(keyword + " detailed guide")
-        article = result.article or {}
-        content = article.get("content", content)
+        retry = run_pipeline(keyword + " detailed guide")
+
+        if retry.get("status") == "success":
+            article["content"] = retry.get("content", content)
 
     return result, article
 
@@ -182,8 +188,7 @@ def generate_post(request):
         title = article.get("title") or f"{keyword} Guide 2026"
         content = article.get("content", "")
         meta = (article.get("meta_description") or "")[:160]
-        source = article.get("source", "AI")
-        score = getattr(result, "score", 0)
+        score = result.get("final_score", 0)
 
         provider = get_active_provider()
 
@@ -196,7 +201,7 @@ def generate_post(request):
                 title=title,
                 content=content,
                 keyword=keyword,
-                source=source,
+                source="AI",
                 provider=provider,
                 meta_description=meta,
                 score=score
@@ -208,7 +213,7 @@ def generate_post(request):
                 post.published_at = now()
                 post.save()
 
-        response_data = build_response(post, getattr(result, "logs", []))
+        response_data = build_response(post, [])
 
         cache.set(key, response_data, 300)
 

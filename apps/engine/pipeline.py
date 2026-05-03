@@ -11,15 +11,13 @@ from apps.plugins.seo.seo_plugin import load_seo_plugins
 
 class Pipeline:
     """
-    🚀 ULTRA PIPELINE v4 (MULTI-MODEL + HUMANIZED AI)
+    🚀 ULTRA PIPELINE v5 (AI + SELF OPTIMIZING)
 
-    Features:
-    - multi-model orchestration
-    - humanization layer
-    - best version selection
-    - adaptive rewrite
-    - SEO plugin integration
-    - performance tracking
+    New:
+    - adaptive retry strategy
+    - smarter scoring
+    - execution intelligence
+    - better context sharing
     """
 
     def __init__(self, state):
@@ -28,9 +26,11 @@ class Pipeline:
         self.history = []
         self.start_time = None
 
-        # 🔥 core engines
         self.router = ModelRouter()
         self.humanizer = Humanizer()
+
+        # 🔥 load once
+        load_seo_plugins()
 
     # =========================
     # 🚀 MAIN RUNNER
@@ -38,8 +38,6 @@ class Pipeline:
     def run(self):
 
         self.start_time = time.time()
-
-        load_seo_plugins()
 
         best_article = None
         best_score = 0
@@ -57,39 +55,40 @@ class Pipeline:
                 "score": score
             })
 
+            # 🔥 best tracking
             if score > best_score:
                 best_score = score
                 best_article = deepcopy(article)
 
+            # 🔥 early stop (AI decision)
             if score >= 85:
                 self.state.log("✅ High quality achieved")
                 break
 
+            # 🔥 adaptive retry
             if attempt < self.max_attempts:
-                article = self._rewrite(article, score)
+                article = self._rewrite(article, score, attempt)
 
-        # 🔥 final best content
+        # =========================
+        # 🎯 FINALIZE
+        # =========================
         self.state.article = best_article or article
         self.state.score = best_score
 
-        # 🔥 SEO
         self.apply_plugins()
-
-        # 🔥 final scoring
         self.final_score()
 
-        # 🔥 stats
         self.state.history = self.history
         self.state.execution_time = round(time.time() - self.start_time, 2)
 
-        return self.state
+        return self.state.article, self._summary()
 
     # =========================
-    # 🧠 GENERATE (MULTI MODEL)
+    # 🧠 GENERATE
     # =========================
     def _generate(self):
 
-        self.state.log("🧠 Generating article (multi-model)")
+        self.state.log("🧠 Generating article")
 
         model_info = self.router.get_model("draft")
 
@@ -98,19 +97,18 @@ class Pipeline:
             model=model_info
         )
 
-        # 🔥 HUMANIZATION
+        # 🔥 humanization
         try:
             article["content"] = self.humanizer.humanize(
                 article.get("content", "")
             )
-            self.state.log("✨ Humanized content")
         except Exception as e:
             self.state.log(f"❌ Humanizer error: {e}")
 
         return article
 
     # =========================
-    # 🔍 VERIFY
+    # 🔍 VERIFY (SMARTER)
     # =========================
     def _verify(self, article):
 
@@ -120,47 +118,56 @@ class Pipeline:
 
         score = 0
 
-        if len(content) > 1800:
-            score += 35
-        elif len(content) > 1000:
-            score += 25
+        # 🔥 content quality
+        length = len(content)
+        if length > 2000:
+            score += 40
+        elif length > 1200:
+            score += 30
+        elif length > 800:
+            score += 20
         else:
             score += 10
 
+        # 🔥 keyword relevance
         if keyword in content.lower():
             score += 20
 
         if keyword in title.lower():
             score += 10
 
+        # 🔥 structure signals
         if "<h2>" in content.lower():
             score += 10
 
         if "<ul>" in content.lower():
             score += 10
 
-        if content.count(".") > 15:
+        # 🔥 readability
+        if content.count(".") > 20:
             score += 10
 
+        # 🔥 sections
         if "introduction" in content.lower():
             score += 5
 
         if "conclusion" in content.lower():
             score += 5
 
+        # 🔥 diversity bonus
         if "<table>" in content.lower():
             score += 5
 
         self.state.log(f"📊 Score: {score}")
 
-        return score
+        return min(score, 100)
 
     # =========================
-    # 🔁 REWRITE (AI BASED)
+    # 🔁 REWRITE (ADAPTIVE)
     # =========================
-    def _rewrite(self, article, score):
+    def _rewrite(self, article, score, attempt):
 
-        self.state.log("🔁 AI Rewrite triggered")
+        self.state.log("🔁 AI Rewrite")
 
         model_info = self.router.get_model("rewrite")
 
@@ -170,10 +177,10 @@ class Pipeline:
             base_content=article.get("content", "")
         )
 
-        # fallback if failed
+        # 🔥 fallback
         if not improved or "content" not in improved:
-            self.state.log("⚠️ Rewrite fallback used")
-            improved = article
+            self.state.log("⚠️ Rewrite fallback")
+            return article
 
         return improved
 
@@ -187,7 +194,8 @@ class Pipeline:
         context = {
             "keyword": self.state.keyword,
             "score": self.state.score,
-            "history": self.history
+            "history": self.history,
+            "attempts": len(self.history)
         }
 
         try:
@@ -198,7 +206,7 @@ class Pipeline:
                 context=context,
             )
 
-            # 🔥 FINAL HUMAN TOUCH
+            # 🔥 final human polish
             article["content"] = self.humanizer.humanize(
                 article.get("content", "")
             )
@@ -206,8 +214,6 @@ class Pipeline:
             self.state.article = article
             self.state.plugin_metrics = metrics
             self.state.plugin_summary = summary
-
-            self.state.log("✅ Plugins + Final Humanization")
 
         except Exception as e:
             self.state.log(f"❌ Plugin error: {e}")
@@ -226,3 +232,15 @@ class Pipeline:
         self.state.final_score = min(final, 100)
 
         self.state.log(f"🏁 Final Score: {self.state.final_score}")
+
+    # =========================
+    # 📊 SUMMARY
+    # =========================
+    def _summary(self):
+
+        return {
+            "attempts": len(self.history),
+            "best_score": self.state.score,
+            "final_score": self.state.final_score,
+            "execution_time": self.state.execution_time,
+        }

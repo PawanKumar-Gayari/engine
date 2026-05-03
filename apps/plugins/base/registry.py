@@ -1,60 +1,80 @@
 import logging
 import time
-from collections import defaultdict
+from collections import defaultdict, deque
 
 logger = logging.getLogger(__name__)
 
 
 class PluginRegistry:
     """
-    🚀 ENTERPRISE PLUGIN REGISTRY (PRO MAX++)
+    🚀 AI EXECUTION REGISTRY v5 (PRO MAX)
 
     Features:
-    - priority execution
-    - dependency resolution (basic)
-    - execution phases (pre / core / post)
-    - fail-fast / soft mode
-    - metrics tracking + slow plugin detection
-    - plugin enable/disable runtime
-    - hot reload support
-    - selective execution
+    - plugin execution engine
+    - function registry (NEW)
+    - performance tracking
+    - smart skip (AI-like)
+    - analytics layer
     """
+
+    PHASE_ORDER = ["pre", "core", "post"]
 
     def __init__(self):
         self.plugins = []
         self.plugin_map = {}
+        self.functions = {}  # 🔥 NEW (fix for your error)
+
+        # 🔥 DATA LAYER
+        self.history = defaultdict(lambda: deque(maxlen=50))
+        self.stats = defaultdict(lambda: {
+            "runs": 0,
+            "failures": 0,
+            "avg_time": 0
+        })
 
     # =========================
-    # 🔌 REGISTER
+    # 🔌 REGISTER PLUGIN
     # =========================
     def register(self, plugin):
 
         name = getattr(plugin, "name", plugin.__class__.__name__)
 
         if name in self.plugin_map:
-            logger.warning(f"[DUPLICATE] {name} already exists")
             return
+
+        plugin.enabled = getattr(plugin, "enabled", True)
+        plugin.priority = getattr(plugin, "priority", 10)
+        plugin.phase = getattr(plugin, "phase", "core")
 
         self.plugins.append(plugin)
         self.plugin_map[name] = plugin
 
         self._sort_plugins()
 
-        logger.info(f"[REGISTERED] {plugin}")
+    # =========================
+    # 🔥 REGISTER FUNCTION (NEW)
+    # =========================
+    def register_function(self, name, func):
+
+        if name in self.functions:
+            logger.warning(f"[SKIP] Function {name} already exists")
+            return
+
+        self.functions[name] = func
+        logger.info(f"[FUNCTION REGISTERED] {name}")
 
     # =========================
-    # 🔄 HOT RELOAD
+    # 🚀 RUN FUNCTION (NEW)
     # =========================
-    def replace(self, plugin):
-        name = plugin.name
+    def run_function(self, name, *args, **kwargs):
 
-        if name in self.plugin_map:
-            self.plugins = [p for p in self.plugins if p.name != name]
+        if name not in self.functions:
+            raise ValueError(f"Function '{name}' not found")
 
-        self.register(plugin)
+        return self.functions[name](*args, **kwargs)
 
     # =========================
-    # ⚙️ RUN ENGINE
+    # 🚀 MAIN EXECUTION
     # =========================
     def run_all(
         self,
@@ -64,45 +84,103 @@ class PluginRegistry:
         context: dict = None,
         fail_fast: bool = False,
         only: list = None,
-        phase: str = None  # pre / core / post
+        phase: str = None
     ):
 
         context = context or {}
         metrics = []
         start_total = time.time()
 
-        plugins = self._filter_plugins(only, phase)
+        phases = [phase] if phase else self.PHASE_ORDER
 
-        for plugin in plugins:
+        for ph in phases:
 
-            if not getattr(plugin, "enabled", True):
-                continue
+            plugins = self._filter_plugins(only, ph)
 
-            name = plugin.name
+            for plugin in plugins:
 
-            try:
-                logger.info(f"[START] {name}")
+                if not plugin.enabled:
+                    continue
 
-                article, metric = plugin.safe_run(article, keyword, intent, context)
+                name = plugin.name
+
+                # 🔥 SMART SKIP
+                if self._should_skip(name):
+                    logger.info(f"[SKIP AI] {name}")
+                    continue
+
+                start = time.time()
+
+                try:
+                    result = plugin.run(article, keyword, intent, context)
+                    article = result if result else article
+
+                    duration = round(time.time() - start, 4)
+
+                    metric = {
+                        "plugin": name,
+                        "status": "success",
+                        "duration": duration
+                    }
+
+                    self._update_stats(name, duration, True)
+
+                except Exception as e:
+                    duration = round(time.time() - start, 4)
+
+                    metric = {
+                        "plugin": name,
+                        "status": "failed",
+                        "error": str(e),
+                        "duration": duration
+                    }
+
+                    self._update_stats(name, duration, False)
+
+                    if fail_fast:
+                        break
 
                 metrics.append(metric)
 
-                logger.info(f"[END] {name} → {metric['status']}")
-
-                if fail_fast and metric["status"] == "failed":
-                    break
-
-            except Exception as e:
-                logger.error(f"[ERROR] {name}: {e}")
-
-                if fail_fast:
-                    break
-
         total_time = round(time.time() - start_total, 4)
-
         summary = self._build_summary(metrics, total_time)
 
         return article, metrics, summary
+
+    # =========================
+    # 🧠 AI SKIP LOGIC
+    # =========================
+    def _should_skip(self, name):
+
+        stat = self.stats[name]
+
+        if stat["runs"] > 10 and stat["failures"] / stat["runs"] > 0.5:
+            return True
+
+        if stat["avg_time"] > 2.0:
+            return True
+
+        return False
+
+    # =========================
+    # 📊 UPDATE STATS
+    # =========================
+    def _update_stats(self, name, duration, success):
+
+        stat = self.stats[name]
+
+        stat["runs"] += 1
+        stat["avg_time"] = (
+            (stat["avg_time"] * (stat["runs"] - 1) + duration) / stat["runs"]
+        )
+
+        if not success:
+            stat["failures"] += 1
+
+        self.history[name].append({
+            "duration": duration,
+            "success": success
+        })
 
     # =========================
     # 🔍 FILTER
@@ -115,45 +193,51 @@ class PluginRegistry:
             plugins = [p for p in plugins if p.name in only]
 
         if phase:
-            plugins = [p for p in plugins if getattr(p, "phase", "core") == phase]
+            plugins = [p for p in plugins if p.phase == phase]
 
         return plugins
 
     # =========================
-    # 🔥 SORT (priority + dependency)
+    # 🔀 SORT
     # =========================
     def _sort_plugins(self):
 
-        self.plugins.sort(key=lambda p: getattr(p, "priority", 10))
+        self.plugins.sort(
+            key=lambda p: (
+                self.PHASE_ORDER.index(p.phase) if p.phase in self.PHASE_ORDER else 1,
+                getattr(p, "priority", 10),
+                self.stats[p.name]["avg_time"]
+            )
+        )
 
     # =========================
-    # 📊 SUMMARY + ANALYTICS
+    # 📊 SUMMARY
     # =========================
     def _build_summary(self, metrics, total_time):
 
         success = sum(1 for m in metrics if m["status"] == "success")
         failed = sum(1 for m in metrics if m["status"] == "failed")
 
-        slowest = sorted(metrics, key=lambda m: m.get("duration", 0), reverse=True)
-
         return {
             "total_plugins": len(metrics),
             "success": success,
             "failed": failed,
             "total_time": total_time,
-            "slowest_plugin": slowest[0] if slowest else None,
         }
 
     # =========================
-    # 🔁 ENABLE / DISABLE
+    # 📈 ANALYTICS
     # =========================
-    def enable_plugin(self, name):
-        if name in self.plugin_map:
-            self.plugin_map[name].enabled = True
+    def analytics(self):
 
-    def disable_plugin(self, name):
-        if name in self.plugin_map:
-            self.plugin_map[name].enabled = False
+        return {
+            name: {
+                "runs": s["runs"],
+                "failures": s["failures"],
+                "avg_time": round(s["avg_time"], 4)
+            }
+            for name, s in self.stats.items()
+        }
 
     # =========================
     # 🔍 GET
@@ -161,41 +245,13 @@ class PluginRegistry:
     def get_plugin(self, name):
         return self.plugin_map.get(name)
 
-    # =========================
-    # ❌ CLEAR
-    # =========================
+    def list_plugins(self):
+        return list(self.plugin_map.keys())
+
     def clear(self):
-        self.plugins = []
-        self.plugin_map = {}
-
-    # =========================
-    # 📊 STATUS
-    # =========================
-    def status(self):
-        return {
-            "total": len(self.plugins),
-            "plugins": [
-                {
-                    "name": p.name,
-                    "priority": p.priority,
-                    "enabled": p.enabled,
-                    "phase": getattr(p, "phase", "core"),
-                }
-                for p in self.plugins
-            ]
-        }
-
-    # =========================
-    # 🧠 GROUP BY PHASE
-    # =========================
-    def group_by_phase(self):
-        groups = defaultdict(list)
-
-        for p in self.plugins:
-            phase = getattr(p, "phase", "core")
-            groups[phase].append(p.name)
-
-        return dict(groups)
+        self.plugins.clear()
+        self.plugin_map.clear()
+        self.functions.clear()
 
 
 # =========================

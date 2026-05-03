@@ -6,17 +6,14 @@ from apps.plugins.base.base_plugin import BasePlugin
 
 class MetaPlugin(BasePlugin):
     """
-    🚀 ULTRA PRO META ENGINE v3 (SEO + CTR + AI Optimized)
+    🚀 SMART META ENGINE v4 (AI + CTR + Context Aware)
 
-    Features:
-    - keyword front loading
-    - semantic variation (natural feel)
-    - intent-aware templates
-    - CTR optimized CTA placement
-    - dynamic year injection
-    - A/B variation ready
-    - anti-spam / over-optimization control
-    - advanced scoring (Google-like signals)
+    Upgrades:
+    - context-aware keyword detection
+    - stable CTA (intent based)
+    - improved cleaning (no over-removal)
+    - better scoring logic
+    - string + dict safe
     """
 
     name = "seo_meta"
@@ -25,13 +22,12 @@ class MetaPlugin(BasePlugin):
 
     MAX_LENGTH = 155
 
-    POWER_PHRASES = [
-        "Check now",
-        "Don't miss",
-        "Latest update",
-        "Full details inside",
-        "Explore now"
-    ]
+    POWER_PHRASES = {
+        "default": ["Check now", "Explore now"],
+        "informational": ["Learn more", "Full guide inside"],
+        "commercial": ["Best deals", "Top choices"],
+        "career": ["Apply now", "Check eligibility"]
+    }
 
     VARIATIONS = [
         "complete details",
@@ -47,29 +43,51 @@ class MetaPlugin(BasePlugin):
     # =========================
     def run(self, article, keyword="", intent="", context=None):
 
-        keyword = keyword.strip() or article.get("title", "")
+        context = context or {}
+
+        # =========================
+        # 📦 HANDLE STRING / DICT
+        # =========================
+        if isinstance(article, str):
+            article = {"content": article}
+
+        # =========================
+        # 🧠 KEYWORD DETECTION
+        # =========================
+        keyword = keyword or context.get("keyword") or article.get("title", "")
+        keyword = self._clean_keyword(keyword)
 
         if not keyword:
             return article
 
-        keyword = self._clean_keyword(keyword)
-
-        # 🔹 base meta
+        # =========================
+        # 🔥 BUILD META
+        # =========================
         meta = self._build_meta(keyword, intent)
 
-        # 🔹 semantic variation
+        # =========================
+        # 🔄 VARIATION
+        # =========================
         meta = self._add_variation(meta)
 
-        # 🔹 CTA injection
-        meta = self._inject_cta(meta)
+        # =========================
+        # 🎯 CTA (intent aware)
+        # =========================
+        meta = self._inject_cta(meta, intent)
 
-        # 🔹 cleanup
+        # =========================
+        # 🧹 CLEAN
+        # =========================
         meta = self._clean_text(meta)
 
-        # 🔹 length control
+        # =========================
+        # ✂️ TRIM
+        # =========================
         meta = self._trim(meta)
 
-        # 🔹 scoring
+        # =========================
+        # 📊 SCORE
+        # =========================
         score = self._score(meta, keyword)
 
         article["meta_description"] = meta
@@ -100,60 +118,50 @@ class MetaPlugin(BasePlugin):
         elif intent == "guide":
             return f"{keyword}: step-by-step guide, practical tips and real examples."
 
+        elif intent == "commercial":
+            return f"{keyword}: best options, features, pricing and buying guide."
+
         return f"{keyword} {year}: benefits, usage, features and complete information."
 
     # =========================
-    # 🔄 SEMANTIC VARIATION
+    # 🔄 VARIATION
     # =========================
     def _add_variation(self, meta):
 
         variation = random.choice(self.VARIATIONS)
 
         if variation not in meta:
-            meta = f"{meta} {variation}."
+            meta += f" {variation}."
 
         return meta
 
     # =========================
-    # 🔥 CTA INJECTION
+    # 🎯 CTA (INTENT BASED)
     # =========================
-    def _inject_cta(self, meta):
+    def _inject_cta(self, meta, intent):
 
-        cta = random.choice(self.POWER_PHRASES)
+        cta_list = self.POWER_PHRASES.get(intent, self.POWER_PHRASES["default"])
+        cta = random.choice(cta_list)
 
-        # place CTA at end (natural CTR)
         if cta.lower() not in meta.lower():
-            meta = f"{meta} {cta}."
+            meta += f" {cta}."
 
         return meta
 
     # =========================
-    # 🔁 CLEAN TEXT
+    # 🧹 CLEAN TEXT (SAFE)
     # =========================
     def _clean_text(self, text):
 
         text = re.sub(r"\s+", " ", text)
 
-        # remove duplicate words (soft)
-        words = text.split()
-        seen = set()
-        result = []
-
-        for w in words:
-            lw = w.lower()
-            if lw not in seen:
-                result.append(w)
-                seen.add(lw)
-
-        text = " ".join(result)
-
-        # punctuation fix
+        # ❌ remove aggressive dedupe (SEO damage करता है)
         text = re.sub(r"\s+\.", ".", text)
 
         return text.strip()
 
     # =========================
-    # ✂️ LENGTH CONTROL
+    # ✂️ TRIM
     # =========================
     def _trim(self, text):
 
@@ -163,36 +171,36 @@ class MetaPlugin(BasePlugin):
         return text[:self.MAX_LENGTH].rsplit(" ", 1)[0] + "..."
 
     # =========================
-    # 📊 SCORING ENGINE
+    # 📊 SMART SCORING
     # =========================
     def _score(self, meta, keyword):
 
         score = 0
         text = meta.lower()
 
-        # keyword front boost
+        # keyword position
         if text.startswith(keyword):
             score += 30
         elif keyword in text:
             score += 20
 
-        # length optimization
+        # length
         if 120 <= len(meta) <= 160:
             score += 25
 
-        # sentence quality
-        if meta.count(".") >= 1:
-            score += 10
-
-        # CTR phrases
-        if any(p.lower() in text for p in self.POWER_PHRASES):
+        # CTA presence
+        if any(p.lower() in text for v in self.POWER_PHRASES.values() for p in v):
             score += 15
 
-        # semantic richness
+        # variation
         if any(v in text for v in self.VARIATIONS):
             score += 10
 
-        # penalty (spam)
+        # readability
+        if "." in meta:
+            score += 10
+
+        # penalty
         if text.count(keyword) > 2:
             score -= 10
 
